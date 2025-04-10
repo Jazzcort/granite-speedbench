@@ -1,20 +1,18 @@
 from transformers import AutoTokenizer
+import os
 def main():
     tokenizer = AutoTokenizer.from_pretrained("ibm-granite/granite-3.2-8b-instruct")
     
-    context_length = ["1000", "2000", "3000", "4000"]
-    for l in context_length:
-        text_file_name = f"{l}_text.txt"
-        code_file_name = f"{l}_code.txt"
-        with open(text_file_name, "r") as file:
-            content = file.read()
-            tokens = tokenizer.encode(content)
-            print(f"{text_file_name}: {len(tokens)} tokens")
-
-        with open(code_file_name, "r") as file:
-            content = file.read()
-            tokens = tokenizer.encode(content)
-            print(f"{code_file_name}: {len(tokens)} tokens")
+    for root, dirs, files in os.walk("."):
+        if root != ".":
+            continue
+        files.sort()
+        for file in files:
+            if file.endswith(".txt"):
+                with open(file) as f:
+                    content = f.read()
+                    tokens = tokenizer.encode(content)
+                    print(f"{file}: {len(tokens)} tokens")
 
 if __name__ == "__main__":
     main()
