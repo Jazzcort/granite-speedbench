@@ -1,2 +1,7 @@
 /*.txt
 output/
+.venv/
+build/
+granite_speedbench.egg-info/
+.DS_store
+__pycache__/

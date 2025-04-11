@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "granite-speedbench"
+version = "0.1.4"
+description = "A benchmarking tool for Granite"
+authors = [
+    {name = "Chih-Tao Lee", email = "jason101011113@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests",
+]
+
+[project.scripts]
+granite-speedbench = "granite_speedbench.cli:main"
+
+[tool.setuptools]
+packages = ["granite_speedbench"]
+
+[tool.setuptools.package-data]
+granite_speedbench = ["tests/*.txt"]

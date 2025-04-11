@@ -17,17 +17,6 @@ const MAX_TITLE_LENGTH = 100;
 // Async session functions live in thunks (because of IDE messaging mostly)
 // see sessionSlice for sync redux session functions
 
-export async function getSession(
-  ideMessenger: IIdeMessenger,
-  id: string,
-): Promise<Session> {
-  const result = await ideMessenger.request("history/load", { id });
-  if (result.status === "error") {
-    throw new Error(result.error);
-  }
-  return result.content;
-}
-
 export const refreshSessionMetadata = createAsyncThunk<
   SessionMetadata[],
   {
@@ -46,26 +35,6 @@ export const refreshSessionMetadata = createAsyncThunk<
   dispatch(setAllSessionMetadata(result.content));
   return result.content;
 });
-
-export const deleteSession = createAsyncThunk<void, string, ThunkApiType>(
-  "session/delete",
-  async (id, { getState, dispatch, extra }) => {
-    dispatch(deleteSessionMetadata(id)); // optimistic
-    const state = getState();
-    if (id === state.session.id) {
-      await dispatch(
-        loadLastSession({
-          saveCurrentSession: false,
-        }),
-      );
-    }
-    const result = await extra.ideMessenger.request("history/delete", { id });
-    if (result.status === "error") {
-      throw new Error(result.error);
-    }
-    dispatch(refreshSessionMetadata({}));
-  },
-);
 
 export const updateSession = createAsyncThunk<void, Session, ThunkApiType>(
   "session/update",
