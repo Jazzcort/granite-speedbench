@@ -89,23 +89,6 @@ export function toChatMessage(
   }
 }
 
-export function toCompleteBody(
-  prompt: string,
-  options: CompletionOptions,
-): CompletionCreateParams {
-  return {
-    prompt,
-    model: options.model,
-    max_tokens: options.maxTokens,
-    temperature: options.temperature,
-    top_p: options.topP,
-    frequency_penalty: options.frequencyPenalty,
-    presence_penalty: options.presencePenalty,
-    stream: options.stream ?? true,
-    stop: options.stop,
-  };
-}
-
 export function toFimBody(
   prefix: string,
   suffix: string,
