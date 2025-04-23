@@ -52,3 +52,10 @@ You can check the usage detail with `-h` flag
 | -f    | file     | path to the test file directory     |
 | -o    | output    | path to the output file directory  |
 
+## Benchmark
+|                     | TTFT, 2k |        | TTFT, 20k |        | Tokens/sec (2k) |        | Tokens/sec (20k) |        | Overall |
+|---------------------|----------|--------|-----------|--------|------------------|--------|-------------------|--------|---------|
+|                     | Time     | Score  | Time      | Score  | Rate             | Score  | Rate              | Score  |         |
+| **Macbook m3 Pro**  | 7.81     | 1.0    | 55.37     | 1.0    | --               | 1.0    | --                | 1.0    | -       |
+| **NVIDIA 4070Ti**   | 0.8      | 5.0    | 10        | 7.0    | 20               | 2.0    | 4                 | 1.2    | 3.0     |
+
