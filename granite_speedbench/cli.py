@@ -21,7 +21,8 @@ def speed_bench():
     parser.add_argument("model", nargs="+")
     parser.add_argument("-f", "--file", nargs="?", type=str , help="Manually provide test files directory")
     parser.add_argument("-o", "--output", nargs="?", type=str , help="Manually provide output directory")
-    parser.add_argument("-t", "--text", action='store_true')
+    parser.add_argument("-t", "--text", action='store_true', help="Include test cases with pure text")
+    parser.add_argument("-i", "--infinite", action='store_true', help="Run test cases without time limit")
 
     args = parser.parse_args()
 
@@ -32,12 +33,13 @@ def speed_bench():
         out_dir = args.output
 
     for model in args.model:
-        run_tests(model, test_dir, out_dir, not args.text)
+        run_tests(model, test_dir, out_dir, not args.text, args.infinite)
 
     print(f"Output directory: {out_dir}")
 
-def run_single_test(file, file_path, model, counts):
+def run_single_test(file, file_path, model, counts, infinite_mode):
     record = TestRecoed(file, model, counts)
+    timeout = 120 if not infinite_mode else None
     with open(file_path) as f:
         content = f.read()
         data = {
@@ -56,7 +58,7 @@ def run_single_test(file, file_path, model, counts):
             print(f"---- Running test - {file} -------- {i + 1}/{counts}")
             
             try:
-                response = requests.post(url="http://localhost:11434/api/generate", json=data, timeout=120)
+                response = requests.post(url="http://localhost:11434/api/generate", json=data, timeout=timeout)
             except requests.exceptions.Timeout:
                 should_abandon_record = True
                 print("Single run exceeds 2 minutes ---- Ababdon this test")
@@ -87,7 +89,7 @@ def run_single_test(file, file_path, model, counts):
 
     return record if not should_abandon_record else None
 
-def run_tests(model: str, test_dir: str, out_dir: str, code_only: bool):
+def run_tests(model: str, test_dir: str, out_dir: str, code_only: bool, infinite_mode: bool):
     # Restart model
     refresh_model_instance(model)
     counts = 3
@@ -112,7 +114,7 @@ def run_tests(model: str, test_dir: str, out_dir: str, code_only: bool):
 
     for test_file in sorted_test_files:
         file_path = os.path.join(test_dir, test_file)
-        record = run_single_test(test_file, file_path, model, counts)
+        record = run_single_test(test_file, file_path, model, counts, infinite_mode)
         if record:
             records.append(record)
         else:
@@ -122,13 +124,9 @@ def run_tests(model: str, test_dir: str, out_dir: str, code_only: bool):
     with open(f"{out_dir}/{model}.txt", "w") as f:
         now = datetime.datetime.now()
         f.write(f"This summary is created on {now.strftime('%Y-%m-%d')} at {now.strftime('%H:%M:%S')}\n\n" + "*************************************************************************\n")
-    with open(f"{out_dir}/{model}-ttft.csv", "w") as f:
+    with open(f"{out_dir}/{model}.csv", "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["Context", "ttft"])
-    with open(f"{out_dir}/{model}-tps.csv", "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Context", "tps"])
-
+        writer.writerow(["ID", "num_tokens", "time_to_first_token", "tokens_per_sec"])
 
     print("\n\
      ____                                             \n\
@@ -146,13 +144,9 @@ def run_tests(model: str, test_dir: str, out_dir: str, code_only: bool):
         with open(f"{out_dir}/{model}.txt", "a") as file:
             file.write(output + "\n")
 
-        with open(f"{out_dir}/{model}-ttft.csv", "a") as f:
+        with open(f"{out_dir}/{model}.csv", "a") as f:
             writer = csv.writer(f)
-            writer.writerows(record.generate_context_vs_ttft())
-
-        with open(f"{out_dir}/{model}-tps.csv", "a") as f:
-            writer = csv.writer(f)
-            writer.writerows(record.generate_context_vs_tps())
+            writer.writerows(record.generate_csv())
 
 def refresh_model_instance(model: str):
     data = {
@@ -227,19 +221,11 @@ class TestRecoed:
         summery += f"Successful run / Total run: {success_counts}/{self.total_count}\n"
         return summery
     
-    def generate_context_vs_ttft(self):
+    def generate_csv(self):
         res = []
 
         for ind, tokens_count in enumerate(self.prompt_tokens):
-            res.append([tokens_count, self.elapsed_times[ind]])
-
-        return res
-
-    def generate_context_vs_tps(self):
-        res = []
-
-        for ind, tokens_count in enumerate(self.prompt_tokens):
-            res.append([tokens_count, self.token_rates[ind]])
+            res.append([self.name, tokens_count, self.elapsed_times[ind], self.token_rates[ind]])
 
         return res
 
