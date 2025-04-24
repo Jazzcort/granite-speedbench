@@ -53,9 +53,27 @@ You can check the usage detail with `-h` flag
 | -o    | output    | path to the output file directory  |
 
 ## Benchmark
-|                     | TTFT, 2k |        | TTFT, 20k |        | Tokens/sec (2k) |        | Tokens/sec (20k) |        | Overall |
-|---------------------|----------|--------|-----------|--------|------------------|--------|-------------------|--------|---------|
-|                     | Time     | Score  | Time      | Score  | Rate             | Score  | Rate              | Score  |         |
-| **Macbook m3 Pro**  | 7.81     | 1.0    | 55.37     | 1.0    | --               | 1.0    | --                | 1.0    | -       |
-| **NVIDIA 4070Ti**   | 0.8      | 5.0    | 10        | 7.0    | 20               | 2.0    | 4                 | 1.2    | 3.0     |
+### granite3.3:8b
+|                                          | TTFT, 2k |        | TTFT, 20k |        | Tokens/sec (2k)  |        | Tokens/sec (20k)  |        | Overall |
+|------------------------------------------|----------|--------|-----------|--------|------------------|--------|-------------------|--------|---------|
+|                                          | Time     | Score  | Time      | Score  | Rate             | Score  | Rate              | Score  |         |
+|           **Macbook m3 Pro**             | 6.99     | 1.0    | 132.52    | 1.0    | 22.39            | 1.0    | 8.51              | 1.0    | -       |
+|           Flash Attention on             | 6.66     | --     | 88.81     | --     | 25.93            | --     | 14.92             | --     | -       |
+| Flash Attention on / KV Cache Type q4_0  | 7.18     | --     | 132.53    | --     | 26.41            | --     | 19.88             | --     | -       |
+
+### granite3.3:2b
+|                                          | TTFT, 2k |        | TTFT, 20k |        | Tokens/sec (2k)  |        | Tokens/sec (20k)  |        | Overall |
+|------------------------------------------|----------|--------|-----------|--------|------------------|--------|-------------------|--------|---------|
+|                                          | Time     | Score  | Time      | Score  | Rate             | Score  | Rate              | Score  |         |
+|           **Macbook m3 Pro**             | 2.57     | 1.0    | 81.74     | 1.0    | 45.59            | 1.0    | 11.41             | 1.0    | -       |
+|           Flash Attention on             | 2.24     | --     | 36.02     | --     | 62.24            | --     | 30.72             | --     | -       |
+| Flash Attention on / KV Cache Type q4_0  | 2.28     | --     | 40.12     | --     | 60.41            | --     | 40.12             | --     | -       |
+
+### qwen2.5-coder:7b
+|                                          | TTFT, 2k |        | TTFT, 20k |        | Tokens/sec (2k)  |        | Tokens/sec (20k)  |        | Overall |
+|------------------------------------------|----------|--------|-----------|--------|------------------|--------|-------------------|--------|---------|
+|                                          | Time     | Score  | Time      | Score  | Rate             | Score  | Rate              | Score  |         |
+|          **Macbook m3 Pro**              | 5.03     | 1.0    | 84.01     | 1.0    | 27.44            | 1.0    | 12.74             | 1.0    | -       |
+|          Flash Attention on              | 4.87     | --     | 61.48     | --     | 30.67            | --     | 23.40             | --     | -       |
+| Flash Attention on / KV Cache Type q4_0  | 5.16     | --     | 85.44     | --     | 46.39            | --     | 24.45             | --     | -       |
 
