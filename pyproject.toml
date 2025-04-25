@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "granite-speedbench"
-version = "0.1.4"
+version = "0.1.5"
 description = "A benchmarking tool for Granite"
 authors = [
     {name = "Chih-Tao Lee", email = "jason101011113@gmail.com"}
