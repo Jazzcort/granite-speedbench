@@ -51,6 +51,8 @@ You can check the usage detail with `-h` flag
 |----------|----------|----------|
 | -f    | file     | path to the test file directory     |
 | -o    | output    | path to the output file directory  |
+| -t    | text    | run with pure text test cases |
+| -i    | infinite    | run without 2-minute timeout  |
 
 ## Benchmark
 ### granite3.3:8b
