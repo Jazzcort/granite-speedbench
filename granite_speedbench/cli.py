@@ -38,7 +38,7 @@ def speed_bench():
     print(f"Output directory: {out_dir}")
 
 def run_single_test(file, file_path, model, counts, infinite_mode):
-    record = TestRecoed(file, model, counts)
+    record = TestRecord(file, model, counts)
     timeout = 120 if not infinite_mode else None
     with open(file_path) as f:
         content = f.read()
@@ -93,7 +93,7 @@ def run_tests(model: str, test_dir: str, out_dir: str, code_only: bool, infinite
     # Restart model
     refresh_model_instance(model)
     counts = 3
-    records: List[TestRecoed] = []
+    records: List[TestRecord] = []
 
     test_files = []
     for root, _, files in os.walk(test_dir):
@@ -172,7 +172,7 @@ def refresh_model_instance(model: str):
     else:
         print(f"Failed to spawn {model} model")
 
-class TestRecoed:
+class TestRecord:
     def __init__(self, name: str = "unknown", model: str = "unknown", total_count: int = 0):
         self.name = name
         self.model = model
