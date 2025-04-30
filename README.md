@@ -28,27 +28,61 @@ python -m venv .venv
 pip install .
 ```
 ### Example
+#### ollama
 ```shell
-granite-speedbench granite3.2:8b
+granite-speedbench ollama granite3.3:8b
 ```
-You can also use your own test files and store the test output to the specific directory
+You can also use your own test files and store the test output to a specific directory.
 ```shell
-granite-speedbench -f path/to/test/file -o path/to/output/file granite3.2:8b
+granite-speedbench ollama -f path/to/test/file -o path/to/output/file granite3.3:8b
 ```
-You can also test multiple models in one go
+You can also test multiple models in one go.
 ```shell
-granite-speedbench granite3.2:2b granite3.2:8b
+granite-speedbench ollama granite3.3:2b granite3.3:8b
 ```
+#### openai
+If you store your api key in `.env` file.
+```shell
+granite-speedbench openai
+```
+You can also provide the api key manually.
+```shell
+granite-speedbench openai -k <YOUR_API_KEY>
+```
+You can also use your own test files and store the test output to a specific directory.
+```shell
+granite-speedbench openai -f path/to/test/file -o path/to/output/file 
+```
+
 
 ## Parameters
 You can check the usage detail with `-h` flag
-### Required
+
+### ollama
+Benchmark against Ollama.
+
+#### Required
 |  Name    | Description |
 |----------|----------|
 |  model (You can provide multiple models)    | name of the model to be tested  |
-### Optional
+#### Optional
 | Flag | Name | Description |
 |----------|----------|----------|
+| -f    | file     | path to the test file directory     |
+| -o    | output    | path to the output file directory  |
+| -t    | text    | run with pure text test cases |
+| -i    | infinite    | run without 2-minute timeout  |
+
+### openai
+Benchmark against maas.
+
+#### Required
+None, but you need to either provide an api key manually with `-k` flag or create a `.env` file with `API_KEY=<YOUR_API_KEY>` at `<HOME_DIR>/.granite-speedbench`. Otherwise, the benchmark can not be run.
+
+#### Optional
+| Flag | Name | Description |
+|----------|----------|----------|
+| -k    | key     | api key  |
 | -f    | file     | path to the test file directory     |
 | -o    | output    | path to the output file directory  |
 | -t    | text    | run with pure text test cases |
