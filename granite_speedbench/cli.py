@@ -14,7 +14,7 @@ base_url = "https://granite-3-1-8b-instruct-w4a16-maas-apicast-production.apps.p
 home_dir = os.path.expanduser("~")
 options = {
     "num_ctx": 32768,
-    "num_predict": 10,
+    "num_predict": 100,
     "temperature": 0
 }
 
@@ -101,13 +101,16 @@ def run_single_test_ollama(file, file_path, model, counts, infinite_mode):
             # Gather time to first token and token rate
             if (response.status_code == 200) and "prompt_eval_duration" in response_json and "eval_count" in response_json and "eval_duration" in response_json and "prompt_eval_count" in response_json and response_json["eval_duration"] > 0:
                 time_to_first_token = response_json["prompt_eval_duration"] / 1_000_000_000
-                record.add_elapsed_times(time_to_first_token)
+                record.add_prompt_eval_time(time_to_first_token)
                 print(f"---- Elapsed time: {time_to_first_token:.3f} seconds")
 
-                tokens = response_json["eval_count"]
                 eval_duration = response_json["eval_duration"] / 1_000_000_000
+                record.add_decode_time(eval_duration)
+
+                tokens = response_json["eval_count"]
                 token_rate = tokens / eval_duration
                 record.add_token_rate(token_rate)
+                print(f"---- Tokens generated: {tokens} tokens")
                 print(f"---- Token rate: {token_rate:.3f} tokens/s")
 
                 record.add_prompt_token(response_json["prompt_eval_count"])
@@ -147,7 +150,7 @@ def print_and_export_benchmark_result(out_dir, model, backend, records):
         f.write(f"This summary is created on {now.strftime('%Y-%m-%d')} at {now.strftime('%H:%M:%S')}\n\n" + "*************************************************************************\n")
     with open(f"{out_dir}/{backend}-{model}.csv", "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["ID", "num_tokens", "time_to_first_token", "tokens_per_sec"])
+        writer.writerow(["ID", "prompt_tokens", "prompt_eval_time", "tokens_per_sec", "decode_start_token", "decode_time"])
 
     print("\n\
      ____                                             \n\
@@ -232,7 +235,8 @@ def refresh_model_instance(model: str):
         print(f"Failed to spawn {model} model")
 
 def run_single_test_openai(file, file_path, model, counts, infinite_mode, key):
-    record = TestRecord(file, model, counts)
+    token_threshold = 10
+    record = TestRecord(file, model, counts, token_threshold)
     timeout = 120 if not infinite_mode else None
     with open(file_path) as f:
         content = f.read()
@@ -279,9 +283,9 @@ def run_single_test_openai(file, file_path, model, counts, infinite_mode, key):
                             first_token = False
                             time_received_first_token = time.perf_counter()
                             time_to_first_token = time_received_first_token - start_time
-                            record.add_elapsed_times(time_to_first_token)
+                            record.add_prompt_eval_time(time_to_first_token)
                             print(f"---- Elapsed time: {time_to_first_token:.3f} seconds")
-                        if token_counts == 10:
+                        if token_counts == record.get_token_threshold():
                             tps_start_time = time.perf_counter()
 
                         str_chunk = chunk.decode("utf-8")
@@ -310,10 +314,14 @@ def run_single_test_openai(file, file_path, model, counts, infinite_mode, key):
 
                     # Only calculate tps if we receive more than 10 tokens
                     if tps_start_time != None:
+                        decode_time = tps_end_time - tps_start_time
+                        record.add_decode_time(decode_time)
+
                         # The cloud inference always sends an empty response before the last response
                         # Therefore, we minus 11 (10 for threshold + 1 for empty response)
-                        tps = ( token_counts - 11 ) / (tps_end_time - tps_start_time)
+                        tps = ( token_counts - token_threshold - 1 ) / (decode_time)
                         record.add_token_rate(tps)
+                        print(f"---- Tokens generated: {token_counts - 1} tokens")
                         print(f"---- Token rate: {tps:.3f} tokens/s")
                     else:
                         record.add_token_rate(-1)
@@ -339,22 +347,30 @@ def run_single_test_openai(file, file_path, model, counts, infinite_mode, key):
     return record if not should_abandon_record else None
 
 class TestRecord:
-    def __init__(self, name: str = "unknown", model: str = "unknown", total_count: int = 0):
+    def __init__(self, name: str = "unknown", model: str = "unknown", total_count: int = 0, decode_token_threshold: int = 0):
         self.name = name
         self.model = model
         self.total_count = total_count
-        self.elapsed_times: List[float] = []
+        self.prompt_eval_times: List[float] = []
         self.token_rates: List[float] = []
+        self.decode_times: List[float] = []
+        self.decode_token_threshold: int = decode_token_threshold
         self.prompt_tokens: List[int] = []
 
-    def add_elapsed_times(self, elapsed_time: float):
-        self.elapsed_times.append(elapsed_time)
+    def add_prompt_eval_time(self, elapsed_time: float):
+        self.prompt_eval_times.append(elapsed_time)
 
     def add_token_rate(self, token_rate: float):
         self.token_rates.append(token_rate)
 
     def add_prompt_token(self, prompt_token: int):
         self.prompt_tokens.append(prompt_token)
+
+    def add_decode_time(self, decode_time: float):
+        self.decode_times.append(decode_time)
+
+    def get_token_threshold(self):
+        return self.decode_token_threshold
 
     def summarize(self) -> str:
         summary = f"---- Summary - {self.name} - {self.model} ----\n"
@@ -369,7 +385,7 @@ class TestRecord:
         total_time = 0
         total_token_rate = 0
         for ind in range(self.total_count):
-            time_to_first_token = self.elapsed_times[ind]
+            time_to_first_token = self.prompt_eval_times[ind]
             token_rate = self.token_rates[ind]
             # Use token_rate as a fact to decide whether the run is successful or not
             if token_rate > 0:
@@ -391,15 +407,18 @@ class TestRecord:
     def generate_csv(self):
         res = []
 
-        for ind, tokens_count in enumerate(self.prompt_tokens):
-            res.append([self.name, tokens_count, self.elapsed_times[ind], self.token_rates[ind]])
+        for ind, prompt_tokens in enumerate(self.prompt_tokens):
+            decode_start_token = (prompt_tokens + self.get_token_threshold()) if prompt_tokens > 0 else -1
+
+            res.append([self.name, prompt_tokens, self.prompt_eval_times[ind], self.token_rates[ind], decode_start_token, self.decode_times[ind]])
 
         return res
     
     def run_failed(self):
-        self.add_elapsed_times(-1)
+        self.add_prompt_eval_time(-1)
         self.add_token_rate(-1)
         self.add_prompt_token(-1)
+        self.add_decode_time(-1)
 
 
 def main():
